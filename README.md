@@ -40,6 +40,7 @@ Prerequisites:
 * CMake 3.5+
 * python3
 * virtualenv
+* jinja2
 
 Building the debug version and running the unit tests:
 ```bash

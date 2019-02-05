@@ -149,6 +149,17 @@ add_custom_command(OUTPUT ${DSDLC_OUTPUT_FILES}
 add_custom_target(libuavcan_dsdlc DEPENDS ${DSDLC_OUTPUT_FILES})
 include_directories(${DSDLC_OUTPUT})
 
+#
+# dsdl2cpp invocation (work-in-progress)
+#
+set(DSDL2CPP_PYDSDL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/submodules/pydsdl")
+set(DSDL2CPP_INPUTS "${CMAKE_CURRENT_SOURCE_DIR}/submodules/dsdl/uavcan")
+set(DSDL2CPP_OUTPUT "${CMAKE_BINARY_DIR}/dsdl2cpp_out")
+set(DSDL2CPP_BASE "${CMAKE_CURRENT_SOURCE_DIR}/commons/dsdl2cpp")
+set(DSDL2CPP_SCRIPT "${DSDL2CPP_BASE}/dsdl2cpp")
+set(DSDL2CPP_TEMPLATE_DIR "${LIBUAVCAN_INCLUDE}/uavcan/templates")
+set(DSDL2CPP_INPUT_FILES "${CMAKE_CURRENT_SOURCE_DIR}/libuavcan")
+
 # +---------------------------------------------------------------------------+
 # | BUILD AND RUN NATIVE UNIT TESTS
 # +---------------------------------------------------------------------------+
@@ -174,15 +185,20 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Woverloaded-virtual -Wsign-promo -Wold-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-conversion")
 
 #
-# Test : All Unit Tests
+# Test : All C++ Unit Tests
 #
 file(GLOB_RECURSE TEST_CXX_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "test/native/*.cpp")
 add_executable(libuavcan_test_native ${TEST_CXX_FILES})
 add_dependencies(libuavcan_test_native libuavcan_dsdlc)
 target_link_libraries(libuavcan_test_native gmock_main)
 
-# Tests run automatically upon successful build
-# If failing tests need to be investigated with debugger, use 'make --ignore-errors'
 add_test(NAME libuavcan_test_native
          COMMAND libuavcan_test_native
          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+#
+# Test : All Python Unit Tests
+#
+add_test(NAME dsdl2cpp_test
+        COMMAND ${PYTEST} ${DSDL2CPP_BASE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

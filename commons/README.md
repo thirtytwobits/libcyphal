@@ -4,9 +4,9 @@ The commons is a set of implementations that are optional but complementary to t
 
 All commons sub-projects are provided under the same license as libuavcan.
 
-## dsdl_compiler
+## dsdl2cpp
 
-A DSDL-to-C++ transpiler written in Python and using [pyuavcan](https://github.com/UAVCAN/pyuavcan) for DSDL parsing. This is used by the libuavcan tests to generate DSDL for native unit tests and on-target testing. It can be integrated into projects using libuavcan that only need to generate C++ from DSDL.
+A DSDL-to-C++ transpiler written in Python and using [pydsdl](https://github.com/UAVCAN/pydsdl) for DSDL parsing. This is used by the libuavcan tests to generate DSDL for native unit tests and on-target testing. It can be integrated into projects that only need to generate C++ from DSDL.
 
 ## SocketCAN Platform Adapter
 
