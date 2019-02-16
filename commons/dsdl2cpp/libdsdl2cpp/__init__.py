@@ -15,12 +15,6 @@ __all__ = ["generators"]
 # +---------------------------------------------------------------------------+
 
 
-def _unittest_module() -> None:
-    assert True
-
-# +---------------------------------------------------------------------------+
-
-
 def _build_paths(paths: List[str], resolve_paths: bool, required: bool) -> List[str]:
     """
     Helper method to build pathlib objects from input strings and handle
@@ -77,3 +71,10 @@ def parse_all(root_namespaces: List[str], extra_includes: List[str], output_dir:
             type_to_output_map[type] = output_path
 
     return type_to_output_map
+
+# +---------------------------------------------------------------------------+
+import pytest
+
+def _unittest_parse_all() -> None:
+    with pytest.raises(ValueError):
+        parse_all(None, None, None, "badext")

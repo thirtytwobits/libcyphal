@@ -29,7 +29,7 @@ def main() -> int:
         '--outdir', '-O', default='dsdl_to_cpp_out', help='output directory')
 
     parser.add_argument('--templates',
-                        required=True,
+                        required='--list-outputs' not in sys.argv,
                         help="Working on this one...")
 
     parser.add_argument('--pydsdl-path', help='''The path to the pydsdl python source. 
@@ -110,8 +110,8 @@ def main() -> int:
 
         return generator.generate_all(args.dry_run)
     else:
-        for files_tuple in parser_result.values():
-            sys.stdout.write(str(files_tuple.output_path))
+        for output_path in parser_result.values():
+            sys.stdout.write(str(output_path))
             sys.stdout.write(';')
         return 0
 

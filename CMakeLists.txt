@@ -110,6 +110,12 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/submodules/dsdl/README.md")
     message(FATAL_ERROR "The dsdl submodule was not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
+#
+# Setup pydsdl from submodule into the build's virtual environment.
+#
+execute_process(COMMAND ${PIP} --disable-pip-version-check --isolated install ${PROJECT_SOURCE_DIR}/submodules/pydsdl/
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
 # +---------------------------------------------------------------------------+
 # | SOURCE GENERATION
 # +---------------------------------------------------------------------------+
@@ -152,13 +158,41 @@ include_directories(${DSDLC_OUTPUT})
 #
 # dsdl2cpp invocation (work-in-progress)
 #
-set(DSDL2CPP_PYDSDL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/submodules/pydsdl")
 set(DSDL2CPP_INPUTS "${CMAKE_CURRENT_SOURCE_DIR}/submodules/dsdl/uavcan")
 set(DSDL2CPP_OUTPUT "${CMAKE_BINARY_DIR}/dsdl2cpp_out")
 set(DSDL2CPP_BASE "${CMAKE_CURRENT_SOURCE_DIR}/commons/dsdl2cpp")
 set(DSDL2CPP_SCRIPT "${DSDL2CPP_BASE}/dsdl2cpp")
 set(DSDL2CPP_TEMPLATE_DIR "${LIBUAVCAN_INCLUDE}/uavcan/templates")
 set(DSDL2CPP_INPUT_FILES "${CMAKE_CURRENT_SOURCE_DIR}/libuavcan")
+
+file(GLOB_RECURSE DSDL2CPP_TEMPLATE_FILES ${DSDL2CPP_TEMPLATE_DIR} "*.j2")
+
+foreach(DSDL2CPP_INPUT ${DSDLC_INPUTS})
+    file(GLOB_RECURSE DSDL2CPP_NEW_INPUT_FILES ${CMAKE_CURRENT_SOURCE_DIR} "${DSDL2CPP_INPUT}/*.uavcan")
+    list(APPEND DDSDL2CPP_INPUT_FILES ${DSDL2CPP_NEW_INPUT_FILES})
+endforeach(DSDL2CPP_INPUT)
+
+execute_process(COMMAND ${PYTHON} ${DSDL2CPP_SCRIPT} ${DSDL2CPP_INPUTS} --list-outputs
+                OUTPUT_VARIABLE DSDL2CPP_OUTPUT_FILES
+                RESULT_VARIABLE DSDL2CPP_LIST_OUTPUTS_RESULT)
+
+if(NOT DSDL2CPP_LIST_OUTPUTS_RESULT EQUAL 0)
+    message(FATAL_ERROR "Failed to retrieve a list of headers the dsdl2cpp would generate (${DSDL2CPP_LIST_OUTPUTS_RESULT})")
+endif()
+
+if("${DSDL2CPP_OUTPUT_FILES}" STREQUAL "")
+    message(FATAL_ERROR "No header files would be generated for DSDL input \"${DSDL2CPP_INPUTS}\"")
+endif()
+
+#TODO provide the DDSDL2CPP_INPUT_FILES to dsdl2cpp
+add_custom_command(OUTPUT ${DSDL2CPP_OUTPUT_FILES}
+                   COMMAND ${PYTHON} ${DSDL2CPP_SCRIPT} --templates ${DSDL2CPP_TEMPLATE_DIR} ${DSDL2CPP_INPUTS} -O${DSDL2CPP_OUTPUT} -v
+                   DEPENDS ${DDSDL2CPP_INPUT_FILES} ${DSDL2CPP_TEMPLATE_FILES}
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                   COMMENT "Running dsdl2cpp")
+
+add_custom_target(libuavcan_dsdl2cpp DEPENDS ${DSDL2CPP_OUTPUT_FILES})
+include_directories(${DSDL2CPP_OUTPUT})
 
 # +---------------------------------------------------------------------------+
 # | BUILD AND RUN NATIVE UNIT TESTS
