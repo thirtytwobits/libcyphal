@@ -113,7 +113,9 @@ endif()
 #
 # Setup pydsdl from submodule into the build's virtual environment.
 #
-execute_process(COMMAND ${PIP} --disable-pip-version-check --isolated install ${PROJECT_SOURCE_DIR}/submodules/pydsdl/
+# This does an "editable" install.
+#
+execute_process(COMMAND ${PIP} --disable-pip-version-check --isolated install -e ${PROJECT_SOURCE_DIR}/submodules/pydsdl/
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 # +---------------------------------------------------------------------------+
@@ -153,7 +155,6 @@ add_custom_command(OUTPUT ${DSDLC_OUTPUT_FILES}
                    COMMENT "Running dsdl compiler")
 
 add_custom_target(libuavcan_dsdlc DEPENDS ${DSDLC_OUTPUT_FILES})
-include_directories(${DSDLC_OUTPUT})
 
 #
 # dsdl2cpp invocation (work-in-progress)
@@ -165,14 +166,14 @@ set(DSDL2CPP_SCRIPT "${DSDL2CPP_BASE}/dsdl2cpp")
 set(DSDL2CPP_TEMPLATE_DIR "${LIBUAVCAN_INCLUDE}/uavcan/templates")
 set(DSDL2CPP_INPUT_FILES "${CMAKE_CURRENT_SOURCE_DIR}/libuavcan")
 
-file(GLOB_RECURSE DSDL2CPP_TEMPLATE_FILES ${DSDL2CPP_TEMPLATE_DIR} "*.j2")
+file(GLOB DSDL2CPP_TEMPLATE_FILES ${DSDL2CPP_TEMPLATE_DIR} "*.j2")
 
 foreach(DSDL2CPP_INPUT ${DSDLC_INPUTS})
     file(GLOB_RECURSE DSDL2CPP_NEW_INPUT_FILES ${CMAKE_CURRENT_SOURCE_DIR} "${DSDL2CPP_INPUT}/*.uavcan")
-    list(APPEND DDSDL2CPP_INPUT_FILES ${DSDL2CPP_NEW_INPUT_FILES})
+    list(APPEND DSDL2CPP_INPUT_FILES ${DSDL2CPP_NEW_INPUT_FILES})
 endforeach(DSDL2CPP_INPUT)
 
-execute_process(COMMAND ${PYTHON} ${DSDL2CPP_SCRIPT} ${DSDL2CPP_INPUTS} --list-outputs
+execute_process(COMMAND ${PYTHON} ${DSDL2CPP_SCRIPT} ${DSDL2CPP_INPUTS} --list-outputs -O ${DSDL2CPP_OUTPUT}
                 OUTPUT_VARIABLE DSDL2CPP_OUTPUT_FILES
                 RESULT_VARIABLE DSDL2CPP_LIST_OUTPUTS_RESULT)
 
@@ -184,15 +185,13 @@ if("${DSDL2CPP_OUTPUT_FILES}" STREQUAL "")
     message(FATAL_ERROR "No header files would be generated for DSDL input \"${DSDL2CPP_INPUTS}\"")
 endif()
 
-#TODO provide the DDSDL2CPP_INPUT_FILES to dsdl2cpp
 add_custom_command(OUTPUT ${DSDL2CPP_OUTPUT_FILES}
-                   COMMAND ${PYTHON} ${DSDL2CPP_SCRIPT} --templates ${DSDL2CPP_TEMPLATE_DIR} ${DSDL2CPP_INPUTS} -O${DSDL2CPP_OUTPUT} -v
-                   DEPENDS ${DDSDL2CPP_INPUT_FILES} ${DSDL2CPP_TEMPLATE_FILES}
+                   COMMAND ${PYTHON} ${DSDL2CPP_SCRIPT} --templates ${DSDL2CPP_TEMPLATE_DIR} ${DSDL2CPP_INPUTS} -O ${DSDL2CPP_OUTPUT} -v
+                   DEPENDS ${DSDL2CPP_INPUT_FILES} ${DSDL2CPP_TEMPLATE_FILES}
                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                    COMMENT "Running dsdl2cpp")
 
 add_custom_target(libuavcan_dsdl2cpp DEPENDS ${DSDL2CPP_OUTPUT_FILES})
-include_directories(${DSDL2CPP_OUTPUT})
 
 # +---------------------------------------------------------------------------+
 # | BUILD AND RUN NATIVE UNIT TESTS
@@ -202,7 +201,7 @@ include_directories(${DSDL2CPP_OUTPUT})
 #
 include_directories(
     ${LIBUAVCAN_INCLUDE}
-    ${CMAKE_BINARY_DIR}/dsdl_generated
+    ${DSDL2CPP_OUTPUT}
     ${DSDLC_OUTPUT}
 )
 
@@ -223,7 +222,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-conversion")
 #
 file(GLOB_RECURSE TEST_CXX_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "test/native/*.cpp")
 add_executable(libuavcan_test_native ${TEST_CXX_FILES})
-add_dependencies(libuavcan_test_native libuavcan_dsdlc)
+add_dependencies(libuavcan_test_native libuavcan_dsdlc libuavcan_dsdl2cpp)
 target_link_libraries(libuavcan_test_native gmock_main)
 
 add_test(NAME libuavcan_test_native

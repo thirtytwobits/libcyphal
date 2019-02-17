@@ -17,7 +17,6 @@
 #endif // {{T.full_name | macrofy}}
 
 /*
-  TODO: enable C comment escaping for this eval context
   +---------------------------------------------------------------------------+
   | TEMPLATE VERIFICATION
   |     The output below this section is used to verify and debug this 
@@ -28,9 +27,7 @@
   | section should cause template expansion to fail and prevent invalid 
   | source from being generated.
   +---------------------------------------------------------------------------+
-  TODO: make this more like assert T.full_name where the assertion can include
-  what was missing in the python exception.
-  {{T.full_name | required }}
+  {% assert T.full_name %}
   +---------------------------------------------------------------------------+
   | YAML dump (if pyyaml is available on the system)
   +---------------------------------------------------------------------------+

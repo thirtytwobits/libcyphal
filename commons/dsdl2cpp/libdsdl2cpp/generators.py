@@ -11,8 +11,9 @@ from pathlib import Path, PurePath
 from typing import Dict, ItemsView, KeysView, List
 
 from jinja2 import (Environment, FileSystemLoader, Template,
-                    TemplateRuntimeError, environmentfilter)
+                    TemplateRuntimeError, TemplateAssertionError, environmentfilter, nodes)
 from jinja2.runtime import Undefined
+from jinja2.ext import Extension
 
 from pydsdl.data_type import (CompoundType, ServiceType, StructureType,
                               UnionType)
@@ -41,7 +42,8 @@ class Generator(metaclass=ABCMeta):
         raise NotImplementedError()
 
 # +---------------------------------------------------------------------------+
-
+# | JINJA : filters
+# +---------------------------------------------------------------------------+
 def _jinja2_filter_yamlfy(value):
     try:
         from yaml import dump
@@ -58,6 +60,52 @@ def _jinja2_filter_required_value(env: Environment, value):
 def _jinja2_filter_macrofy(value: str) -> str:
     return value.replace(' ', '_').replace('.', '_').upper()
 
+# +---------------------------------------------------------------------------+
+# | JINJA : Extensions
+# +---------------------------------------------------------------------------+
+class JinjaAssert(Extension):
+    """
+    Jinja2 extension that allows {% assert T.field %} statements. Templates should
+    uses these statements where missing or False values would result in malformed
+    C++.
+    """
+
+    tags = set(['assert'])
+
+    def __init__(self, environment):
+        super(JinjaAssert, self).__init__(environment)
+    
+    def parse(self, parser) -> nodes.Node :
+        """
+        See http://jinja.pocoo.org/docs/2.10/extensions/ for help writing
+        extensions.
+        """
+
+        # This will be the macro name "assert"
+        token : nodes.Token = next(parser.stream)
+
+        # now we parse a single expression that must evalute to True
+        args = [parser.parse_expression(), 
+                nodes.Const(token.lineno),
+                nodes.Const(parser.name),
+                nodes.Const(parser.filename)]
+
+        if parser.stream.skip_if('comma'):
+            args.append(parser.parse_expression())
+        else:
+            args.append(nodes.Const("Template assertion failed."))
+
+        return nodes.CallBlock(self.call_method('_do_assert', args),
+                               [], [], "").set_lineno(token.lineno)
+    
+    def _do_assert(self, expression, lineno, name, filename, message, caller):
+        if not expression:
+            raise TemplateAssertionError(message, lineno, name, filename)
+        return caller()
+
+# +---------------------------------------------------------------------------+
+# | JINJA : Generator
+# +---------------------------------------------------------------------------+
 class Jinja2Generator(Generator):
 
     TEMPLATE_SUFFIX = ".j2"
@@ -72,7 +120,8 @@ class Jinja2Generator(Generator):
                 "Tempaltes directory {} did not exist?".format(templates_dir))
         logger.info("Loading templates from {}".format(templates_dir))
         self._env = Environment(loader=FileSystemLoader(
-            [str(templates_dir)], followlinks=True))
+            [str(templates_dir)], followlinks=True),
+            extensions=[JinjaAssert])
         self._env.filters["yamlfy"] = _jinja2_filter_yamlfy
         self._env.filters["required"] = _jinja2_filter_required_value
         self._env.filters["macrofy"] = _jinja2_filter_macrofy

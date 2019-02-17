@@ -26,7 +26,7 @@ def main() -> int:
                         help='verbosity level (-v, -vv)')
 
     parser.add_argument(
-        '--outdir', '-O', default='dsdl_to_cpp_out', help='output directory')
+        '--outdir', '-O', default='dsdl2cpp_out', help='output directory')
 
     parser.add_argument('--templates',
                         required='--list-outputs' not in sys.argv,
