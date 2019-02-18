@@ -74,7 +74,20 @@ def parse_all(root_namespaces: List[str], extra_includes: List[str], output_dir:
 
 # +---------------------------------------------------------------------------+
 import pytest
+import unittest.mock
 
 def _unittest_parse_all() -> None:
+    """
+    Expect a ValueError if the extension argument is malformed.
+    """
     with pytest.raises(ValueError):
-        parse_all(None, None, None, "badext")
+        parse_all([], [], "", "badext")
+
+def _unittest_parse_all_no_types() -> None:
+    """
+    Expect a RuntimeError if valid arguments yield no types.
+    """
+    with pytest.raises(Exception):
+        # use CWD to provide a valid directory with
+        # no .uavcan files.
+        parse_all([os.getcwd()], [], "", ".ext")

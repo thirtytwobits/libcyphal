@@ -232,6 +232,9 @@ add_test(NAME libuavcan_test_native
 #
 # Test : All Python Unit Tests
 #
+set(PYTEST_COV_CONFIG ${CMAKE_BINARY_DIR}/coveragerc)
+file(WRITE ${PYTEST_COV_CONFIG}
+     "[run]\ndata_file = ${CMAKE_BINARY_DIR}/.coverage")
 add_test(NAME dsdl2cpp_test
-        COMMAND ${PYTEST} ${DSDL2CPP_BASE}
+        COMMAND ${PYTEST} --cov=libdsdl2cpp --cov-report html:${CMAKE_BINARY_DIR}/htmlcov --cov-config ${CMAKE_BINARY_DIR}/coveragerc ${DSDL2CPP_BASE}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
