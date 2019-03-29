@@ -11,11 +11,12 @@
 // |    This section contains configuration for versions of the library itself,
 // | compilers, c++ standards, etc.
 // +--------------------------------------------------------------------------+
-/**
- * UAVCAN version definition
- */
-#define UAVCAN_VERSION_MAJOR    2
-#define UAVCAN_VERSION_MINOR    0
+/// Semantic version numbers of this library (not the UAVCAN specification).
+#define UAVCAN_LIBRARY_VERSION_MAJOR        2
+#define UAVCAN_LIBRARY_VERSION_MINOR        0
+
+/// The version number of the UAVCAN specification implemented by this library.
+#define UAVCAN_SPECIFICATION_VERSION_MAJOR  1
 
 /**
  * UAVCAN_CPP_VERSION - version of the C++ standard used during compilation.
